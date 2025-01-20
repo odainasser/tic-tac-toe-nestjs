@@ -31,6 +31,7 @@ export class GamesService {
       playerX: playerX,
       playerO: null,
     });
+    console.log('Creating game:', game);
     return this.gameRepository.save(game);
   }
 
@@ -60,7 +61,8 @@ export class GamesService {
     }
     game.playerO = playerO;
     game.status = GameStatus.InProgress;
-    await this.gameRepository.save(game);
-    return game;
+    const updatedGame = await this.gameRepository.save(game);
+    this.gameGateway.broadcastGameStatus(updatedGame.id, updatedGame.status);
+    return updatedGame;
   }
 }

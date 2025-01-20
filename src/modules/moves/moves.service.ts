@@ -36,6 +36,7 @@ export class MovesService {
     if (await this.validateWinner(move.game.id, row, col, move.player.id)) {
       move.game.status = GameStatus.Completed;
       await this.gameRepository.save(move.game);
+      this.gameGateway.broadcastMove(move);
     }
 
     return savedMove;
@@ -53,7 +54,9 @@ export class MovesService {
 
     const board = Array.from({ length: 3 }, () => Array(3).fill(null));
     moves.forEach((move) => {
-      board[move.row][move.col] = move.player.id;
+      if (move.player) {
+        board[move.row][move.col] = move.player.id;
+      }
     });
 
     const winPatterns = [
