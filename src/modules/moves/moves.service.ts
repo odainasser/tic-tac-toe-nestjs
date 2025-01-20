@@ -5,7 +5,7 @@ import { Move } from '../../shared/entities/move.entity';
 import { CreateMoveDto } from '../../shared/dtos/moves/create-move.dto';
 import { User } from '../../shared/entities/user.entity';
 import { Game } from '../../shared/entities/game.entity';
-import { GameStatus } from 'src/common/enums/game-status.enum';
+import { GameStatus } from '../../common/enums/game-status.enum';
 
 @Injectable()
 export class MovesService {
@@ -19,10 +19,26 @@ export class MovesService {
   ) {}
 
   async createMove(createMoveDto: CreateMoveDto): Promise<Move> {
-    const { playerId, gameId } = createMoveDto;
-
     const move = this.moveRepository.create(createMoveDto);
 
+    const { playerId, gameId, row, col } = createMoveDto;
+
+    this.validateRowAndColumn(row, col);
+    move.player = await this.validatePlayer(playerId);
+    move.game = await this.validateGame(gameId, row, col);
+
+    await this.ensurePlayerTurn(move.game, move.player);
+
+    return this.moveRepository.save(move);
+  }
+
+  private validateRowAndColumn(row: number, col: number): void {
+    if (row < 0 || row > 2 || col < 0 || col > 2) {
+      throw new Error('Invalid move: row and column must be between 0 and 2');
+    }
+  }
+
+  private async validatePlayer(playerId: string): Promise<User> {
     if (playerId) {
       const player = await this.userRepository.findOne({
         where: { id: playerId },
@@ -30,9 +46,16 @@ export class MovesService {
       if (!player) {
         throw new Error('Player not found');
       }
-      move.player = player;
+      return player;
     }
+    throw new Error('Player ID is required');
+  }
 
+  private async validateGame(
+    gameId: string,
+    row: number,
+    col: number,
+  ): Promise<Game> {
     if (gameId) {
       const game = await this.gameRepository.findOne({
         where: { id: gameId },
@@ -43,9 +66,28 @@ export class MovesService {
       if (game.status !== GameStatus.InProgress) {
         throw new Error('Game is not in progress');
       }
-      move.game = game;
-    }
 
-    return this.moveRepository.save(move);
+      const existingMove = await this.moveRepository.findOne({
+        where: { game: { id: gameId }, row, col },
+      });
+      if (existingMove) {
+        throw new Error('Cell is already filled');
+      }
+
+      return game;
+    }
+    throw new Error('Game ID is required');
+  }
+
+  private async ensurePlayerTurn(game: Game, player: User): Promise<void> {
+    const lastMove = await this.moveRepository.findOne({
+      where: { game: { id: game.id } },
+      relations: ['player'],
+      order: { createdAt: 'DESC' },
+    });
+
+    if (lastMove && lastMove.player.id === player.id) {
+      throw new Error('It is not your turn');
+    }
   }
 }
