@@ -1,6 +1,6 @@
 ## Description
 
-This project is a Tic-Tac-Toe game built using the NestJS framework. It includes features such as user authentication, game management, real-time updates using WebSockets, user token caching by Redis.
+This project is a Tic-Tac-Toe game built using the NestJS framework. It includes features such as user authentication, game management, real-time updates using WebSockets, user token caching by Redis and unit test.
 
 ## Installation
 
