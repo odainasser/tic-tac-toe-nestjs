@@ -6,6 +6,7 @@ import { CreateMoveDto } from '../../shared/dtos/moves/create-move.dto';
 import { User } from '../../shared/entities/user.entity';
 import { Game } from '../../shared/entities/game.entity';
 import { GameStatus } from '../../common/enums/game-status.enum';
+import { GameGateway } from '../../gateways/game.gateway';
 
 @Injectable()
 export class MovesService {
@@ -16,6 +17,7 @@ export class MovesService {
     private readonly userRepository: Repository<User>,
     @InjectRepository(Game)
     private readonly gameRepository: Repository<Game>,
+    private readonly gameGateway: GameGateway,
   ) {}
 
   async createMove(createMoveDto: CreateMoveDto): Promise<Move> {

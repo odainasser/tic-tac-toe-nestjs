@@ -9,6 +9,7 @@ import { UsersModule } from './modules/security/users/users.module';
 import { AuthModule } from './modules/security/auth/auth.module';
 import { GamesModule } from './modules/games/games.module';
 import { MovesModule } from './modules/moves/moves.module';
+import { GameGateway } from './gateways/game.gateway';
 
 dotenv.config();
 
@@ -38,6 +39,6 @@ dotenv.config();
     MovesModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [AppService, GameGateway],
 })
 export class AppModule {}
