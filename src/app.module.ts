@@ -1,7 +1,5 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { CacheModule } from '@nestjs/cache-manager';
-import * as redisStore from 'cache-manager-redis-store';
 import * as dotenv from 'dotenv';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
@@ -10,6 +8,7 @@ import { AuthModule } from './modules/security/auth/auth.module';
 import { GamesModule } from './modules/games/games.module';
 import { MovesModule } from './modules/moves/moves.module';
 import { GameGateway } from './gateways/game.gateway';
+import { CacheGlobalModule } from './modules/cache/cache.module';
 
 dotenv.config();
 
@@ -26,13 +25,7 @@ dotenv.config();
       synchronize: false,
       logging: true,
     }),
-    CacheModule.register({
-      store: redisStore,
-      host: process.env.REDIS_HOST,
-      port: parseInt(process.env.REDIS_PORT, 10),
-      auth_pass: process.env.REDIS_PASSWORD,
-      ttl: parseInt(process.env.CACHE_TTL, 10) || 3600,
-    }),
+    CacheGlobalModule,
     AuthModule,
     UsersModule,
     GamesModule,
