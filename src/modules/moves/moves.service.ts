@@ -27,9 +27,82 @@ export class MovesService {
     move.player = await this.validatePlayer(playerId);
     move.game = await this.validateGame(gameId, row, col);
 
-    await this.ensurePlayerTurn(move.game, move.player);
+    await this.validatePlayerTurn(move.game, move.player);
 
-    return this.moveRepository.save(move);
+    const savedMove = await this.moveRepository.save(move);
+
+    if (await this.validateWinner(move.game.id, row, col, move.player.id)) {
+      move.game.status = GameStatus.Completed;
+      await this.gameRepository.save(move.game);
+    }
+
+    return savedMove;
+  }
+
+  private async validateWinner(
+    gameId: string,
+    row: number,
+    col: number,
+    playerId: string,
+  ): Promise<boolean> {
+    const moves = await this.moveRepository.find({
+      where: { game: { id: gameId }, player: { id: playerId } },
+    });
+
+    const board = Array.from({ length: 3 }, () => Array(3).fill(null));
+    moves.forEach((move) => {
+      board[move.row][move.col] = move.player.id;
+    });
+
+    const winPatterns = [
+      // Rows
+      [
+        [0, 0],
+        [0, 1],
+        [0, 2],
+      ],
+      [
+        [1, 0],
+        [1, 1],
+        [1, 2],
+      ],
+      [
+        [2, 0],
+        [2, 1],
+        [2, 2],
+      ],
+      // Columns
+      [
+        [0, 0],
+        [1, 0],
+        [2, 0],
+      ],
+      [
+        [0, 1],
+        [1, 1],
+        [2, 1],
+      ],
+      [
+        [0, 2],
+        [1, 2],
+        [2, 2],
+      ],
+      // Diagonals
+      [
+        [0, 0],
+        [1, 1],
+        [2, 2],
+      ],
+      [
+        [0, 2],
+        [1, 1],
+        [2, 0],
+      ],
+    ];
+
+    return winPatterns.some((pattern) =>
+      pattern.every(([r, c]) => board[r][c] === playerId),
+    );
   }
 
   private validateRowAndColumn(row: number, col: number): void {
@@ -79,7 +152,7 @@ export class MovesService {
     throw new Error('Game ID is required');
   }
 
-  private async ensurePlayerTurn(game: Game, player: User): Promise<void> {
+  private async validatePlayerTurn(game: Game, player: User): Promise<void> {
     const lastMove = await this.moveRepository.findOne({
       where: { game: { id: game.id } },
       relations: ['player'],
